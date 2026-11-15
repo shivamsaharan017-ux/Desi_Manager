@@ -32,7 +32,29 @@ Speech recognition support is limited and varies by browser. Some browser implem
 
 ## Data and accounts
 
-The frontend and backend are separate servers connected over the configured API URL. The API scopes business records to the signed-in user. The default local development setup uses SQLite. The sample configuration is for local development; deployments need an appropriate HTTPS hosting and account-security setup.
+The frontend and backend are separate servers connected over the configured API URL. The local API scopes business records to the signed-in user and uses SQLite. For permanent hosting, the Firebase mode below replaces the Express API with Firebase Authentication and Firestore; each account’s records remain private under its own user ID.
+
+## Permanent free hosting with Firebase
+
+This project can be hosted at a stable `PROJECT_ID.web.app` URL using Firebase Hosting, Firebase Authentication, and Firestore on the no-cost Spark plan. Do not attach a billing account or upgrade to Blaze. Firebase can pause a product after its free quota is reached; this setup does not add paid functions or a separate server. The site stays online when your laptop is off.
+
+1. Create a Firebase project in the Firebase Console and keep it on the Spark (no-cost) plan.
+2. In **Authentication → Sign-in method**, enable **Email/Password**.
+3. In **Firestore Database**, create the default database in a nearby region, such as `asia-south1` (Mumbai). Keep the provided `firestore.rules`; they restrict all shop data to the signed-in owner.
+4. In **Project settings → Your apps**, add a Web app and copy its Firebase web config values.
+5. Copy `frontend/.env.firebase.example` to `frontend/.env.production.local` and fill in the API key, auth domain, project ID, and app ID from that web config. These Firebase web config values are public identifiers; Firestore rules and Firebase Auth protect the data. Do not commit your local environment file.
+6. Install the Firebase CLI if needed, sign in, and deploy from the project root:
+
+   ```sh
+   npx firebase-tools login
+   npx firebase-tools use --add
+   npm --prefix frontend run build
+   npx firebase-tools deploy --only hosting,firestore:rules,firestore:indexes
+   ```
+
+   When `firebase use --add` asks, choose the project you created. After deployment, share `https://PROJECT_ID.web.app`.
+
+The cloud deployment starts with a new database. Existing SQLite or demo records are not uploaded. Users create their own account on the hosted site. The free plan has product quotas; check Firebase’s current [pricing](https://firebase.google.com/pricing/) before relying on it for a high-traffic business.
 
 ## API routes
 
