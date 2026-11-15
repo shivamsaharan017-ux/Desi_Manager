@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "dc-manager-app-2026"
+  },
+  "targets": {
+    "dc-manager-app-2026": {
+      "hosting": {
+        "production": [
+          "desimanager"
+        ]
+      }
+    }
+  }
+}

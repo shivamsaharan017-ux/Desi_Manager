@@ -3,7 +3,6 @@ frontend/dist/
 frontend/.env.firebase
 frontend/.env.production.local
 .firebase/
-.firebaserc
 backend/data/*.sqlite
 backend/data/*.sqlite-shm
 backend/data/*.sqlite-wal
