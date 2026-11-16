@@ -13,6 +13,8 @@ import {
   CreditCard,
   Download,
   Ellipsis,
+  Eye,
+  EyeOff,
   FileText,
   Filter,
   Headphones,
@@ -336,6 +338,7 @@ function App() {
 
 function LoginPage({ onAuthenticated }) {
   const [mode, setMode] = useState("login");
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     name: "",
     shopName: "",
@@ -344,11 +347,36 @@ function LoginPage({ onAuthenticated }) {
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const [notice, setNotice] = useState("");
+  const update = (key, value) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    setError("");
+    setNotice("");
+  };
+  const sendResetLink = async () => {
+    const email = form.email.trim();
+    if (!email) {
+      setError("Enter your email address above, and we’ll send a password reset link.");
+      document.getElementById("login-email")?.focus();
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await api.resetPassword(email);
+      setNotice("If an account uses that email, a password reset link is on its way.");
+    } catch {
+      setError("We couldn’t send the reset link. Check the email address and try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
   const submit = async (event) => {
     event.preventDefault();
     setBusy(true);
     setError("");
+    setNotice("");
     try {
       const user = mode === "register"
         ? await api.register(form)
@@ -380,24 +408,27 @@ function LoginPage({ onAuthenticated }) {
       </section>
       <section className="login-panel">
         <div className="login-card">
+          <div className="login-card-brand"><span className="brand-mark"><Coffee size={19} aria-hidden="true" /></span><strong>DesiManager</strong></div>
           <div className="login-card-mark"><Store size={20} /></div>
           <span className="eyebrow">{mode === "login" ? "WELCOME BACK" : "LET’S GET STARTED"}</span>
           <h2>{mode === "login" ? "Sign in to your shop." : "Create your shop account."}</h2>
           <p className="login-intro">{mode === "login" ? "Your books are right where you left them." : "Your expense, udhaar, and voice settings will belong to your account."}</p>
-          <form className="login-form" onSubmit={submit}>
+          <form className="login-form" onSubmit={submit} aria-busy={busy}>
             {mode === "register" && (
               <>
                 <label className="form-field"><span>Your name</span><input autoComplete="name" value={form.name} onChange={(event) => update("name", event.target.value)} placeholder="e.g. Rakesh Kumar" required /></label>
                 <label className="form-field"><span>Shop name</span><input autoComplete="organization" value={form.shopName} onChange={(event) => update("shopName", event.target.value)} placeholder="e.g. Rakesh’s Chai Corner" required /></label>
               </>
             )}
-            <label className="form-field"><span>Email address</span><input type="email" autoComplete="username" value={form.email} onChange={(event) => update("email", event.target.value)} placeholder="you@example.com" required /></label>
-            <label className="form-field"><span>Password</span><input type="password" minLength={8} autoComplete={mode === "login" ? "current-password" : "new-password"} value={form.password} onChange={(event) => update("password", event.target.value)} placeholder="At least 8 characters" required /></label>
-            {error && <div className="inline-alert" role="alert">{error}</div>}
-            <button className="button button--primary login-submit" type="submit" disabled={busy}><span>{busy ? "One moment…" : mode === "login" ? "Sign in" : "Create account"}</span><ArrowRight size={17} /></button>
+            <label className="form-field"><span>Email address</span><input id="login-email" type="email" autoComplete="username" inputMode="email" autoCapitalize="none" spellCheck="false" value={form.email} onChange={(event) => update("email", event.target.value)} placeholder="you@example.com" required /></label>
+            <div className="form-field"><label htmlFor="login-password">Password</label><span className="password-control"><input id="login-password" type={showPassword ? "text" : "password"} minLength={mode === "register" ? 8 : undefined} autoComplete={mode === "login" ? "current-password" : "new-password"} autoCapitalize="none" spellCheck="false" value={form.password} onChange={(event) => update("password", event.target.value)} placeholder={mode === "login" ? "Enter your password" : "At least 8 characters"} required /><button type="button" className="password-toggle" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword}><span>{showPassword ? "Hide" : "Show"}</span>{showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}</button></span></div>
+            {error && <div className="inline-alert login-feedback" role="alert">{error}</div>}
+            {notice && <div className="inline-success login-feedback" role="status">{notice}</div>}
+            <button className="button button--primary login-submit" type="submit" disabled={busy}><span>{busy ? (mode === "login" ? "Signing you in…" : "Creating your account…") : mode === "login" ? "Sign in" : "Create account"}</span>{busy ? <span className="login-progress-mark" aria-hidden="true" /> : <ArrowRight size={17} aria-hidden="true" />}</button>
           </form>
+          {mode === "login" && import.meta.env.VITE_BACKEND_MODE === "firebase" && <button className="forgot-password" type="button" onClick={sendResetLink} disabled={busy}>Forgot password?</button>}
           {import.meta.env.DEV && mode === "login" && <div className="demo-access"><span className="demo-access-icon"><Sparkles size={15} /></span><span><strong>Demo shop</strong><small>Email: rakesh@desimanager.demo · Password: chai1234</small></span></div>}
-          <div className="login-switch">{mode === "login" ? "New to DesiManager?" : "Already have an account?"}<button type="button" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}>{mode === "login" ? "Create an account" : "Sign in"}</button></div>
+          <div className="login-switch">{mode === "login" ? "New to DesiManager?" : "Already have an account?"}<button type="button" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); setNotice(""); setShowPassword(false); }}>{mode === "login" ? "Create an account" : "Sign in"}</button></div>
         </div>
         <p className="login-panel-foot">By signing in, your shop records are scoped to your account.</p>
       </section>
@@ -630,18 +661,19 @@ function Sidebar({ page, onNavigate, connection, user, onLogout }) {
 }
 
 function MobileNav({ page, onNavigate }) {
-  const mobileItems = navItems.filter((item) => ["overview", "sales", "expenses", "credit", "stock", "voice"].includes(item.id));
+  const [moreOpen, setMoreOpen] = useState(false);
+  const mobileItems = navItems.filter((item) => ["overview", "sales", "expenses", "credit"].includes(item.id));
+  const moreItems = navItems.filter((item) => ["stock", "voice"].includes(item.id));
   return (
-    <nav className="mobile-nav" aria-label="Mobile navigation">
+    <nav className="mobile-nav" aria-label="Mobile navigation" onKeyDown={(event) => { if (event.key === "Escape") setMoreOpen(false); }}>
       {mobileItems.map((item) => {
         const Icon = item.icon;
-        return (
-          <button key={item.id} type="button" onClick={() => onNavigate(item.id)} className={page === item.id ? "mobile-nav-item active" : "mobile-nav-item"} aria-current={page === item.id ? "page" : undefined}>
-            <Icon size={20} />
-            <span>{item.id === "credit" ? "Udhaar" : item.id === "voice" ? "Speak" : item.label.split(" ")[0]}</span>
-          </button>
-        );
+        return <button key={item.id} type="button" onClick={() => { setMoreOpen(false); onNavigate(item.id); }} className={page === item.id ? "mobile-nav-item active" : "mobile-nav-item"} aria-current={page === item.id ? "page" : undefined}><Icon size={20} aria-hidden="true" /><span>{item.id === "credit" ? "Udhaar" : item.label}</span></button>;
       })}
+      <div className="mobile-nav-more">
+        <button type="button" className={moreOpen || ["stock", "voice"].includes(page) ? "mobile-nav-item active" : "mobile-nav-item"} aria-expanded={moreOpen} aria-controls="mobile-nav-more-menu" onClick={() => setMoreOpen((open) => !open)}><Ellipsis size={20} aria-hidden="true" /><span>More</span></button>
+        {moreOpen && <div id="mobile-nav-more-menu" className="mobile-nav-more-menu" aria-label="More pages">{moreItems.map((item) => { const Icon = item.icon; return <button key={item.id} type="button" onClick={() => { setMoreOpen(false); onNavigate(item.id); }} aria-current={page === item.id ? "page" : undefined}><Icon size={19} aria-hidden="true" /><span>{item.label}</span></button>; })}</div>}
+      </div>
     </nav>
   );
 }

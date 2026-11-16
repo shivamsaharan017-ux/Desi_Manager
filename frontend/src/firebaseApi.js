@@ -4,6 +4,7 @@ import {
   deleteUser,
   getAuth,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
@@ -363,6 +364,17 @@ function buildApi() {
       const profile = await loadProfile(credential.user);
       return publicUser(credential.user, profile);
     }),
+    resetPassword: async (email) => {
+      const normalizedEmail = String(email || "").trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) throw new Error("Enter a valid email address.");
+      try {
+        await sendPasswordResetEmail(auth, normalizedEmail);
+      } catch (error) {
+        // Keep the message consistent for unknown addresses to avoid exposing account existence.
+        if (error?.code !== "auth/user-not-found") throw appError(error);
+      }
+      return true;
+    },
     logout: () => run(() => signOut(auth)),
     updateSettings: (settings) => run(async () => {
       const user = await currentUser();
